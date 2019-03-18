@@ -1,0 +1,21 @@
+package com.yanxi.animation.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yanxi.animation.base.BaseServiceImpl;
+import com.yanxi.animation.domain.Role;
+import com.yanxi.animation.mapper.RoleMapper;
+import com.yanxi.animation.service.RoleService;
+
+@Service("roleService")
+public class RoleServiceImpl extends BaseServiceImpl<Role> implements RoleService {
+	@Autowired
+	private RoleMapper roleMapper;
+
+	@Override
+	public void save(Role t) {
+		roleMapper.save(t);
+	}
+
+}

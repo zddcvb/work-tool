@@ -1,0 +1,27 @@
+package com.yanxi.animation.base;
+
+import java.util.List;
+
+public class BaseServiceImpl<T> implements BaseService<T> {
+
+	@Override
+	public T findByName(String nameInfo) {
+		return null;
+	}
+
+	@Override
+	public List<T> findAllByName(String nameInfo) {
+		return null;
+	}
+
+	@Override
+	public List<T> findAll() {
+		return null;
+	}
+
+	@Override
+	public void save(T t) {
+		
+	}
+
+}

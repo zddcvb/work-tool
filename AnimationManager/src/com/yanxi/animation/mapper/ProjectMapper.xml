@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yanxi.animation.mapper.ProjectMapper">
+	<select id="findByProjectName" parameterType="String"
+		resultType="com.yanxi.animation.domain.Project">
+		select * from project where projectName=#{projectName}
+	</select>
+	<select id="findByEmployId" parameterType="String"
+		resultType="com.yanxi.animation.domain.Project">
+		select * from project where employeeId like
+		concat('%',#{employeeId},'%')
+	</select>
+	<select id="findByAnimationName" resultType="com.yanxi.animation.domain.Project">
+		select * from
+		project where animationName=#{animationName} and
+		projectName=#{projectName} and employeeId=#{employeeId}
+	</select>
+	<select id="findAll" resultType="com.yanxi.animation.domain.Project">
+		select * from project
+	</select>
+	<insert id="save" parameterType="com.yanxi.animation.domain.Project">
+		insert into project
+		values(#{id},#{projectName},#{animationName},#{hardLevel},#{employeeId},#{completedNum},#{joinId},#{year},#{description})
+	</insert>
+	<update id="update" parameterType="com.yanxi.animation.domain.Project">
+		update project set
+		projectName=#{projectName},hardLevel=#{hardLevel},animationName=#{animationName},,employeeId=#{employeeId},
+		joinId=#{joinId},completedNum=#{completedNum},year=#{year},description=#{description}
+		where id=#{id}
+	</update>
+	<delete id="deleteById" parameterType="integer">
+		delete from project where
+		id=#{id}
+	</delete>
+	<delete id="deleteByEmployeeId" parameterType="String">
+		delete from
+		project where employeeId=#{employeeId}
+	</delete>
+</mapper>

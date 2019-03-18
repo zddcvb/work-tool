@@ -1,0 +1,62 @@
+package com.yanxi.animation.test;
+
+import java.util.List;
+
+import org.junit.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.yanxi.animation.domain.Department;
+import com.yanxi.animation.domain.Employee;
+import com.yanxi.animation.domain.Project;
+import com.yanxi.animation.domain.Role;
+import com.yanxi.animation.util.JDBCUtil;
+import com.yanxi.animation.util.PoiUtil;
+
+public class ManagerTest {
+	private JDBCUtil jdbcUtil;
+
+	@SuppressWarnings("resource")
+	public void tearup() {
+		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+		jdbcUtil = (JDBCUtil) context.getBean("jdbcUtil");
+	}
+
+	@Test
+	public void test_dept() {
+		tearup();
+		PoiUtil util = new PoiUtil();
+		List<Department> departments = util.readDeptData("d:/dept.xls");
+		String message = jdbcUtil.importDeptData(departments);
+		System.out.println(message);
+	}
+
+	@Test
+	public void test_role() {
+		tearup();
+		PoiUtil util = new PoiUtil();
+		List<Role> roles = util.readRoleData("d:/role.xls");
+		String message = jdbcUtil.importRoleData(roles);
+		System.out.println(message);
+	}
+
+	@Test
+	public void test_emloyee() {
+
+		PoiUtil util = new PoiUtil();
+		List<Employee> employees = util.readEmployeeData("d:/动画部.xls");
+		tearup();
+		String message = jdbcUtil.importEmployeeData(employees);
+		System.out.println(message);
+	}
+
+	@Test
+	public void test_project() {
+		PoiUtil util = new PoiUtil();
+		List<Project> projects = util.readProjectData("d:/汇总总表.xls");
+		tearup();
+		String message = jdbcUtil.importProjectData(projects);
+		System.out.println(message);
+	}
+
+}

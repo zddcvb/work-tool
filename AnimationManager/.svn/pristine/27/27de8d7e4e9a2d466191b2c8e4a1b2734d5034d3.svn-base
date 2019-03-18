@@ -1,0 +1,14 @@
+package com.yanxi.animation.main;
+
+import com.yanxi.animation.ui.AnimationUI;
+/**
+ * 项目启动类
+ * @author 邹丹丹
+ *
+ */
+public class AnimationManager {
+	public static void main(String[] args) {
+		AnimationUI ui=new AnimationUI();
+		ui.initUI();
+	}
+}

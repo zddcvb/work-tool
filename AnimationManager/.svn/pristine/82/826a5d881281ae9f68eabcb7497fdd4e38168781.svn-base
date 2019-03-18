@@ -1,0 +1,22 @@
+package com.yanxi.animation.mapper;
+
+import java.util.List;
+
+import com.yanxi.animation.domain.Project;
+public interface ProjectMapper {
+
+	List<Project> findAll();
+
+	void save(Project t);
+
+	List<Project> findByEmployName(String employeeName);
+
+	List<Project> findByProjectName(String projectName);
+
+	void update(Project project);
+
+	void deleteById(int id);
+
+	void deleteByEmployeeName(String employeeName);
+
+}

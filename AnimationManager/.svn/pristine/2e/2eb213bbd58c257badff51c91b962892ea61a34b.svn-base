@@ -1,0 +1,97 @@
+package com.yanxi.animation.domain;
+
+public class Project {
+	private int id;
+	private String projectName;
+	private String hardLevel;
+	private String animationName;
+	private int completedNum;
+	private String description;
+	private String employeeName;
+	private String joinName;
+	private String year;
+
+	public Project() {
+		super();
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	public String getHardLevel() {
+		return hardLevel;
+	}
+
+	public void setHardLevel(String hardLevel) {
+		this.hardLevel = hardLevel;
+	}
+
+	public String getAnimationName() {
+		return animationName;
+	}
+
+	public void setAnimationName(String animationName) {
+		this.animationName = animationName;
+	}
+
+	public int getCompletedNum() {
+		return completedNum;
+	}
+
+	public void setCompletedNum(int completedNum) {
+		this.completedNum = completedNum;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getEmployeeName() {
+		return employeeName;
+	}
+
+	public void setEmployeeName(String employeeName) {
+		this.employeeName = employeeName;
+	}
+
+	public String getJoinName() {
+		return joinName;
+	}
+
+	public void setJoinName(String joinName) {
+		this.joinName = joinName;
+	}
+
+	public String getYear() {
+		return year;
+	}
+
+	public void setYear(String year) {
+		this.year = year;
+	}
+
+	@Override
+	public String toString() {
+		return "Project [id=" + id + ", projectName=" + projectName + ", hardLevel=" + hardLevel + ", animationName="
+				+ animationName + ", completedNum=" + completedNum + ", description=" + description + ", employeeName="
+				+ employeeName + ", joinName=" + joinName + "]";
+	}
+
+}

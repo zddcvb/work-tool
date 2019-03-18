@@ -1,0 +1,99 @@
+package com.jollyclass.backup.utils;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+/**
+ * 文件工具类：格式化文件大小、获得文件创建时间、最后修改时间、格式化时间
+ * @author 邹丹丹
+ * 
+ *
+ */
+public class FileUtils {
+	/**
+	 * 格化式文件大小
+	 * @param size 文件大小，long类型
+	 * @return 字符串类型的文件容量
+	 */
+	public static String getDataSize(long size) {
+		DecimalFormat formater = new DecimalFormat("####.00");
+		if (size < 1024) {
+			return size + "bytes";
+		} else if (size < 1024 * 1024) {
+			float kbsize = size / 1024f;
+			return formater.format(kbsize) + "KB";
+		} else if (size < 1024 * 1024 * 1024) {
+			float mbsize = size / 1024f / 1024f;
+			return formater.format(mbsize) + "MB";
+		} else if (size < 1024 * 1024 * 1024 * 1024) {
+			float gbsize = size / 1024f / 1024f / 1024f;
+			return formater.format(gbsize) + "GB";
+		} else {
+			return "size: error";
+		}
+	}
+
+	/**
+	 * 读取文件创建时间
+	 * @param file 具体的文件
+	 * @return 具体的时间
+	 */
+	public static String getCreateTime(File file) {
+		String strTime = null;
+		if (file.exists() && file.isFile()) {
+			String path = file.getAbsolutePath();
+			System.out.println(path);
+			if (!file.getName().contains(".")) {
+				System.out.println(file.getName());
+				return null;
+			}
+			String endStr = path.substring(path.lastIndexOf("."));
+			// System.out.println(endStr);
+			try {
+				Process p = Runtime.getRuntime().exec("cmd /C dir " + path + "/tc");
+				InputStream is = p.getInputStream();
+				BufferedReader br = new BufferedReader(new InputStreamReader(is));
+				String line = null;
+				while ((line = br.readLine()) != null) {
+					if (line.endsWith(endStr)) {
+						strTime = line.substring(0, 17);
+						break;
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+			System.out.println("创建时间 " + strTime);
+			// 输出：创建时间 2009-08-17 10:21
+		}
+
+		return strTime == null ? "null" : strTime.replace("/", "-").replace("  ", " ");
+	}
+	/**
+	 * 获得文件的最后修改时间
+	 * @param file 读取的文件
+	 * @return 字符串类型的时间
+	 */
+	public static String getLastModifyTime(File file) {
+		if (!file.exists()) {
+			return null;
+		}
+		long lastModified = file.lastModified();
+		return formatTime(lastModified);
+	}
+
+	/**
+	 * 格式化时间
+	 * @param time 需要格式化的时间
+	 * @return 格式化后的时间
+	 */
+	public static String formatTime(long time) {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		return format.format(time);
+	}
+
+}

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+	<!-- 加载配置文件 -->
+	<context:annotation-config />
+	<context:property-placeholder location="classpath:jdbc.properties" />
+	<!-- 自动扫描service包 -->
+	<context:annotation-config />
+	<context:component-scan base-package="com.yanxi.animation.service" />
+	<!-- 配置mybatis，自动烧苗mapper包 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.yanxi.animation.mapper" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+	</bean>
+	<!-- 配置sqlsessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- 加载mapper.xml文件和mybaitis文件 -->
+		<property name="mapperLocations" value="classpath:com/yanxi/animation/mapper/*.xml"></property>
+		<property name="configLocation" value="classpath:mybatis.xml"></property>
+	</bean>
+	<!-- 配置事务 -->
+	<bean id="tansaction"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<!-- <property name="sqlSessionFactory" ref="sqlSessionFactory"></property> -->
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- <tx:annotation-driven /> -->
+	<!-- 通知 -->
+	<tx:advice id="txAdvice" transaction-manager="tansaction">
+		<tx:attributes>
+			<!-- 传播行为 REQUIRED:如果当前有事务，就在当前事务中执行，如果没有事务，则开启一个新的事务 SUPPORTS：如果当前有事务，就在当前事务中执行，如果没有事务，则不执行 -->
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="insert*" propagation="REQUIRED" />
+			<tx:method name="create*" propagation="REQUIRED" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="select*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+	<aop:config>
+		<aop:advisor advice-ref="txAdvice"
+			pointcut="execution(* 
+		com.yanxi.animation.service.*.*(..))" />
+	</aop:config>
+	<bean id="jdbcUtil" class="com.yanxi.animation.util.JDBCUtil"></bean>
+	<bean id="poiUtil" class="com.yanxi.animation.util.PoiUtil"></bean>
+</beans>

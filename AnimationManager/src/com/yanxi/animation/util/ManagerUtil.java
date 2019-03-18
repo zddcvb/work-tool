@@ -1,0 +1,182 @@
+package com.yanxi.animation.util;
+
+import java.io.File;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.yanxi.animation.domain.Department;
+import com.yanxi.animation.domain.Employee;
+import com.yanxi.animation.domain.Project;
+import com.yanxi.animation.domain.Role;
+
+/**
+ * 处理数据导入和生成表格的工具类
+ * 
+ * @author 邹丹丹
+ *
+ */
+public class ManagerUtil {
+	private PoiUtil poiUtil;
+	private JDBCUtil jdbcUtil;
+	private static Logger logger = Logger.getLogger(ManagerUtil.class);
+
+	@SuppressWarnings("resource")
+	private void getUtil() {
+		logger.info("=============getUtil============");
+		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+		poiUtil = (PoiUtil) context.getBean("poiUtil");
+		jdbcUtil = (JDBCUtil) context.getBean("jdbcUtil");
+	}
+
+	/**
+	 * 从excel表格中读取数据，并写入sqlite数据库中 根据filepath判断导入哪些数据到数据库中
+	 * 
+	 * @param filePath
+	 *            excel表格的路径
+	 * @retrun message 返回一个消息字符串，以供对话框显示
+	 */
+	public String importData(String filePath) {
+		logger.info("=============importData============");
+		getUtil();
+		String message = "";
+		// 匹配名称
+		File file = new File(filePath);
+		if (!file.exists()) {
+			message = MessageField.FILE_NOT_EXIST;
+			return message;
+		}
+		String name = file.getName();
+		if (name.contains(MessageField.DEPT_FIELD)) {
+			// 导入部门数据库
+			message = importDeptFromFile(filePath);
+		} else if (name.contains(MessageField.ROLE_FIELD)) {
+			// 导入岗位信息表
+			message = importRoleFromFile(filePath);
+		} else if (name.contains(MessageField.EMPLOYEE_FIELD)) {
+			// 导入员工信息表
+			message = importEmployeeFromFile(filePath);
+		} else if (name.contains(MessageField.PROJECT_FIELD)) {
+			// 导入工作项目数据库
+			message = importProjectFromFile(filePath);
+		} else {
+			message = MessageField.DATA_NO_FIND;
+		}
+		return message;
+	}
+
+	/**
+	 * 导入项目表格数据到数据库中
+	 * 
+	 * @param filePath
+	 * @return message
+	 */
+	private String importProjectFromFile(String filePath) {
+		logger.info("=============importProjectFromFile============");
+		String message;
+		// 从excel读取数据，返回list
+		List<Project> projects = poiUtil.readProjectData(filePath);
+		// 导入数据库中
+		if (projects.size() > 0) {
+			message = jdbcUtil.importProjectData(projects);
+		} else {
+			message = MessageField.EXCEL_ERROR_MSG;
+		}
+		return message;
+	}
+
+	/**
+	 * 导入部门信息
+	 * 
+	 * @param filePath
+	 * @return
+	 */
+	private String importDeptFromFile(String filePath) {
+		logger.info("=============importDeptFromFile============");
+		String message;
+		// 从excel读取数据，返回list
+		List<Department> depts = poiUtil.readDeptData(filePath);
+		// 导入数据库中
+		if (depts.size() > 0) {
+			message = jdbcUtil.importDeptData(depts);
+		} else {
+			message = MessageField.EXCEL_ERROR_MSG;
+		}
+		return message;
+	}
+
+	/**
+	 * 导入岗位信息
+	 * 
+	 * @param filePath
+	 * @return
+	 */
+	private String importRoleFromFile(String filePath) {
+		logger.info("=============importRoleFromFile============");
+		String message;
+		// 从excel读取数据，返回list
+		List<Role> roles = poiUtil.readRoleData(filePath);
+		// 导入数据库中
+		if (roles.size() > 0) {
+			message = jdbcUtil.importRoleData(roles);
+		} else {
+			message = MessageField.EXCEL_ERROR_MSG;
+		}
+		return message;
+	}
+
+	/**
+	 * 导入员工信息
+	 * 
+	 * @param filePath
+	 * @return
+	 */
+	private String importEmployeeFromFile(String filePath) {
+		logger.info("=============importEmployeeFromFile============");
+		String message;
+		// 从excel读取数据，返回list
+		List<Employee> employees = poiUtil.readEmployeeData(filePath);
+		// 导入数据库中
+		if (employees.size() > 0) {
+			message = jdbcUtil.importEmployeeData(employees);
+		} else {
+			message = MessageField.EXCEL_ERROR_MSG;
+		}
+		return message;
+	}
+
+	/**
+	 * 从数据库中读取数据，并生成excel表格，根据nameinfo信息生成对应的表格
+	 * 
+	 * @param nameInfo
+	 *            姓名文本框中的数据
+	 * @return message 返回一个消息字符串，以供对话框显示
+	 */
+	public String submitData(String nameInfo, String savePath) {
+		logger.info("=============submitData============");
+		getUtil();
+		String message = "";
+		nameInfo = nameInfo.trim();
+		logger.info(nameInfo);
+		List<Project> projects = null;
+		if (nameInfo.equals("") || nameInfo == null || nameInfo.contains(MessageField.UI_NAMEHINT)) {
+			// 查找所有
+			nameInfo = MessageField.EXCEL_NAME.substring(0, MessageField.EXCEL_NAME.length() - 1);
+			projects = jdbcUtil.findAll();
+		} else {
+			// 根据nameInfo查找
+			projects = jdbcUtil.findAllByName(nameInfo);
+		}
+		if (projects != null && projects.size() > 0) {
+			logger.info(projects.size());
+			// 1.查询有数据，则说明姓名存在
+			message = poiUtil.createExcel(projects, nameInfo, savePath);
+		} else {
+			message = nameInfo + "不存在";
+		}
+		return message;
+	}
+
+}

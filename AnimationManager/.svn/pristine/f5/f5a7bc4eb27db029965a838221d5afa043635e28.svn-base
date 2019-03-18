@@ -1,0 +1,8 @@
+package com.yanxi.animation.service;
+
+import com.yanxi.animation.base.BaseService;
+import com.yanxi.animation.domain.Project;
+
+public interface ProjectService extends BaseService<Project>{
+	
+}

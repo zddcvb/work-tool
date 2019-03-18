@@ -1,0 +1,22 @@
+package com.yanxi.animation.mapper;
+
+import java.util.List;
+
+import com.yanxi.animation.domain.Department;
+
+public interface DepartmentMapper {
+
+	void save(Department t);
+
+	List<Department> findAll();
+
+	Department findById(int id);
+
+	Department findByName(int id);
+
+	void update(Department dept);
+
+	void deleteById(int id);
+
+	void deleteByName(String deptName);
+}

@@ -1,0 +1,743 @@
+package com.jollyclass.attence.utils;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFClientAnchor;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFRichTextString;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.util.CellRangeAddress;
+import com.jollyclass.attence.constant.StringUtils;
+import com.jollyclass.attence.domain.Employee;
+
+/**
+ * 考勤类 将指纹机中的数据转换成表格，获得上下班状态
+ * 
+ * @author 邹丹丹
+ *
+ */
+public class AttenceUtils {
+	/**
+	 * 批注内容：注明哪天没有打卡
+	 */
+	private List<String> comments;
+	/**
+	 * 索引返回值 0、代表无任何异常， 1、代表姓名不存在； 2、代表部门不存在； 3、代表日期不存在。
+	 */
+	private int index = 0;
+	/**
+	 * 表格的大标题名称，其获得与保存的路径名称一致
+	 */
+	private String sheetName;
+	/**
+	 * 姓名信息数组
+	 */
+	private String[] names;
+	/**
+	 * 考勤数据地址
+	 */
+	private String readPath;
+	/**
+	 * 保存文件的地址
+	 */
+	private String savePath;
+	/**
+	 * 姓名列表的地址
+	 */
+	private String namePath;
+	/**
+	 * 获得输入框的日期，格式为：2017-06
+	 */
+	private String date;
+	/**
+	 * 获得输入框的姓名
+	 */
+	private String queryName;
+	/**
+	 * 获得输入框的部门
+	 */
+	private String deptStr;
+
+	/**
+	 * 构造函数，传递readPath, savePath, namePath, date,queryName, deptStr
+	 * 
+	 * @param readPath
+	 * @param savePath
+	 * @param namePath
+	 * @param date
+	 * @param queryName
+	 * @param deptStr
+	 */
+	public AttenceUtils(String readPath, String savePath, String namePath, String date, String queryName,
+			String deptStr) {
+		super();
+		this.readPath = readPath;
+		this.savePath = savePath;
+		this.namePath = namePath;
+		this.date = date;
+		this.queryName = queryName;
+		this.deptStr = deptStr;
+	}
+
+	/**
+	 * 创建和写入表格
+	 * 
+	 * @return int类型，如果为0，则正常运行，如果为1，则姓名不存在，如果为2，则部门不存在，如果为3，则日期不存在。
+	 */
+	public int createAttenceExcel() {
+		System.out.println("=====createAttenceExcel======");
+
+		names = getDataFromName();
+		List<String[]> sources = readAttenceSource();
+		List<Employee> datas = getEmploeeDatas(sources);
+
+		if (!CommonUtils.isEmpty(queryName, StringUtils.NAME_FIELD)) {
+			// 查询姓名是否存在；
+			int flag = queryFromArray(datas, queryName);
+			if (flag == 0) {
+				index = 1;
+				return index;
+			}
+		}
+		if (!CommonUtils.isEmpty(deptStr, StringUtils.DEPT_FIELD)) {
+			// 查询部门是否存在
+			int deptFlag = queryFromArray(datas, deptStr);
+			if (deptFlag == 0) {
+				index = 2;
+				return index;
+			}
+		}
+		if (!CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)) {
+			// 查询日期是否存在
+			int dateFlag = queryFromArray(datas, date);
+			if (dateFlag == 0) {
+				index = 3;
+				return index;
+			}
+		}
+		List<Employee> list = sortList(datas);
+		sheetName = savePath.substring(savePath.lastIndexOf("\\") + 1, savePath.lastIndexOf("."));
+
+		if (!sheetName.endsWith("表")) {
+			sheetName = sheetName.replace("表", "表\n");
+		}
+		comments = getWeekDay(list);
+		HSSFWorkbook book = createBook(list);
+		// 写入表
+		writeBook(book);
+
+		return index;
+	}
+
+	/**
+	 * 根据姓名查询数据
+	 * 
+	 * @param datas
+	 *            具体的数据
+	 * @return list的数组集合
+	 */
+	private List<Employee> queryDateByName(List<Employee> datas) {
+		List<Employee> list = new ArrayList<Employee>();
+		System.out.println("===============queryDateByName=================");
+		// 判断queryname不能为空以及不能为默认的文本
+		if (CommonUtils.isEmpty(queryName, StringUtils.NAME_FIELD)
+				&& CommonUtils.isEmpty(deptStr, StringUtils.DEPT_FIELD)
+				&& CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)) {
+			return datas;
+		}
+		// 查询相同的名称，相同是添加到list中
+		for (Employee employee : datas) {
+			if (!CommonUtils.isEmpty(queryName, StringUtils.NAME_FIELD) && employee.getName().equals(queryName)) {
+				// System.out.println("姓名有填寫");
+				// 判断部门，如果部门存在，则判断日期；若部门为空，也判断日期；若部门不存在，则跳转
+				// 姓名+部门
+				if (!CommonUtils.isEmpty(deptStr, StringUtils.DEPT_FIELD) && !employee.getDeptName().equals(deptStr)) {
+					// System.out.println("部门不存在");
+					continue;
+				} else {
+					// 若日期为空，则只找姓名内容，若日期不为空，但不存在，也查询储存，若日期存在，则查询储存
+					if (!CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)
+							&& !employee.getAttenceDate().contains(date)) {
+						// System.out.println("日期不存在");
+						continue;
+					}
+				}
+				list.add(employee);
+			} else if (CommonUtils.isEmpty(queryName, StringUtils.NAME_FIELD)) {
+				// System.out.println("姓名沒有填寫");
+				// 根据部门查找
+				if (!CommonUtils.isEmpty(deptStr, StringUtils.DEPT_FIELD) && employee.getDeptName().equals(deptStr)) {
+					// 根据部门+日期查询，如果日期不存在，或者为空，则只按部门查询
+					if (!CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)
+							&& !employee.getAttenceDate().contains(date)) {
+						// System.out.println("日期不存在");
+						continue;
+					}
+					list.add(employee);
+				} else if (CommonUtils.isEmpty(deptStr, StringUtils.DEPT_FIELD)) {
+					if (!CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)
+							&& !employee.getAttenceDate().contains(date)) {
+						// System.out.println("日期不存在");
+						continue;
+					}
+					list.add(employee);
+				} else {
+					// System.out.println("部门不存在");
+					continue;
+				}
+			} else if (!employee.getName().equals(queryName)) {
+				// System.out.println("姓名不存在");
+				continue;
+			}
+		}
+		System.out.println("query list:" + list.size());
+		return list;
+	}
+
+	/**
+	 * 根据路径获取姓名列表 格式为1号xxx
+	 * 
+	 * @return 数组
+	 */
+	private String[] getDataFromName() {
+		BufferedReader bufr = null;
+		ArrayList<String> list = new ArrayList<String>();
+		try {
+			bufr = new BufferedReader(new InputStreamReader(new FileInputStream(namePath), StringUtils.ENCODE_FIELD));
+			String len = null;
+			while ((len = bufr.readLine()) != null) {
+				if (len == null || len.equals("")) {
+					continue;
+				}
+				System.out.println("len:" + len);
+				list.add(len);
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (bufr != null) {
+				try {
+					bufr.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		String[] arrs = new String[list.size()];
+		return list.toArray(arrs);
+	}
+
+	/**
+	 * 读取考勤记录 只去前面两个数据，一个代表员工指纹号，一个代表员工的打卡时间
+	 * 
+	 * @return list的数组集合
+	 */
+	public List<String[]> readAttenceSource() {
+		ArrayList<String[]> lists = new ArrayList<String[]>();
+		BufferedReader bufr = null;
+		try {
+			bufr = new BufferedReader(new InputStreamReader(new FileInputStream(readPath)));
+			String str = "";
+			while ((str = bufr.readLine()) != null) {
+				if (str == null || str.equals("")) {
+					continue;
+				}
+				String[] targets = new String[2];
+				String[] strs = str.split("	");
+				strs[0] = strs[0].substring(strs[0].lastIndexOf(" ") + 1, strs[0].length());
+				targets[0] = strs[0];
+				targets[1] = strs[1];
+				lists.add(targets);
+			}
+			System.out.println("readAttenceSource list:" + lists.size());
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (bufr != null) {
+				try {
+					bufr.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return lists;
+	}
+
+	/**
+	 * 转换考勤记录 将原始数据转换成表格模板的数据
+	 * 
+	 * @param sources
+	 *            原始数据
+	 * @return list集合
+	 */
+	private List<Employee> getEmploeeDatas(List<String[]> sources) {
+		System.out.println("=====getTargetDatas======");
+		List<Employee> list = new ArrayList<Employee>();
+		for (int i = 0; i < sources.size(); i++) {
+			Employee employee = new Employee();
+			String[] strings = sources.get(i);
+			for (int j = 0; j < names.length; j++) {
+				String name = names[j];
+				String targetName = name.substring(name.indexOf(StringUtils.SPIT_HAO) + 1, name.indexOf("-"));
+				String number = name.substring(0, name.indexOf(StringUtils.SPIT_HAO));
+				String dept = name.substring(name.indexOf(StringUtils.SPIT_CONSE) + 1, name.length());
+				if (strings[0].equals(number.trim())) {
+					employee.setNo(strings[0]);
+					employee.setName(targetName);
+					employee.setDeptName(dept);
+					String[] times = CommonUtils.getSeconds(strings[1]);
+					employee.setWeek(CommonUtils.getweek(strings[1]));
+					employee.setAttenceDate(strings[1].substring(0, strings[1].indexOf(" ")));
+					employee.setAttenceTime(strings[1].substring(strings[1].indexOf(" ") + 1));
+					employee.setFlag(times[0]);
+					employee.setStatus(times[1]);
+					employee.setLeaveTime(times[2]);
+					list.add(employee);
+					break;
+				}
+			}
+
+		}
+		System.out.println("getAttenceDatas list:" + list.size());
+		return list;
+	}
+
+	/**
+	 * 
+	 * 创建表格
+	 * 
+	 * @param datas
+	 *            具体数据
+	 * @return HssfWorkbook对象
+	 */
+	private HSSFWorkbook createBook(List<Employee> datas) {
+		System.out.println("=====createBook======");
+		List<Employee> employees = getReAttenceAndLackAttence(datas);
+		HSSFWorkbook book = new HSSFWorkbook();
+		HSSFSheet sheet = book.createSheet(StringUtils.SHEET_NAME);
+		// 创建通用的表格样式
+		HSSFCellStyle commonStyle = createBookStyle(book, HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+		HSSFFont commonFont = createDifferentFont(book, false, HSSFColor.BLACK.index, (short) 12);
+		// 创建大标题样式和字体
+		HSSFCellStyle titleStyle = createBookStyle(book, HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+		HSSFFont titleFont = createDifferentFont(book, true, HSSFColor.BLACK.index, (short) 16);
+		// 创建目录的样式和字体
+		HSSFCellStyle contentStyle = createBookStyle(book, HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+		HSSFFont specialFont = createDifferentFont(book, true, HSSFColor.BLACK.index, (short) 12);
+		// 创建重复打卡或者漏打卡的样式
+		HSSFCellStyle reCountStyle = createBookStyle(book, HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+		HSSFFont reCountFont = createDifferentFont(book, true, HSSFColor.BLUE.index, (short) 12);
+		// 周六日打卡
+		HSSFCellStyle weekStyle = createBookStyle(book, HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
+		HSSFFont weekFont = createDifferentFont(book, true, HSSFColor.RED.index, (short) 12);
+		// 说明行的样式
+		HSSFCellStyle descStyle = createBookStyle(book, HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+		HSSFFont descFont = createDifferentFont(book, false, HSSFColor.BLACK.index, (short) 12);
+		for (int i = 0; i < datas.size() + 3; i++) {
+			HSSFRow row = sheet.createRow(i);
+			int rowNum = row.getRowNum();
+			row.setHeight((short) 1000);
+			for (int j = 0; j < StringUtils.CONTENTS.length; j++) {
+				sheet.setColumnWidth(j, 5000);
+				HSSFCell cell = row.createCell(j);
+				if (rowNum == 0) {
+					CellRangeAddress cra = new CellRangeAddress(0, 0, 0, StringUtils.CONTENTS.length - 1);
+					sheet.addMergedRegion(cra);
+					cell.setCellValue(sheetName);
+					titleStyle.setFont(titleFont);
+					cell.setCellStyle(titleStyle);
+					break;
+				} else if (rowNum == 1) {
+					if (j == 0) {
+						CellRangeAddress cra = new CellRangeAddress(1, 1, 0, StringUtils.CONTENTS.length - 1);
+						sheet.addMergedRegion(cra);
+						cell.setCellValue(StringUtils.EXCEL_DESC);
+						descStyle.setFont(descFont);
+						cell.setCellStyle(descStyle);
+						continue;
+					}
+					descStyle.setFont(descFont);
+					cell.setCellStyle(descStyle);
+				} else if (rowNum == 2) {
+					cell.setCellValue(StringUtils.CONTENTS[j]);
+					contentStyle.setFont(specialFont);
+					cell.setCellStyle(contentStyle);
+				} else {
+					Employee employee = datas.get(i - 3);
+					if (j == 0) {
+						cell.setCellValue(employee.getNo());
+					} else if (j == 1) {
+						cell.setCellValue(employee.getDeptName());
+					} else if (j == 2) {
+						cell.setCellValue(employee.getName());
+						Comment comment = createLeaveComment(sheet, employee.getName(), (short) rowNum, (short) j);
+						cell.setCellComment(comment);
+					} else if (j == 3) {
+						cell.setCellValue(employee.getWeek());
+					} else if (j == 4) {
+						cell.setCellValue(employee.getAttenceDate());
+					} else if (j == 5) {
+						cell.setCellValue(employee.getAttenceTime());
+					} else if (j == 6) {
+						cell.setCellValue(employee.getFlag());
+					} else if (j == 7) {
+						cell.setCellValue(employee.getStatus());
+					} else if (j == 8) {
+						cell.setCellValue(employee.getLeaveTime());
+					}
+					if (StringUtils.SATURDAY.equals(employee.getWeek())
+							|| StringUtils.SUNDAY.equals(employee.getWeek())) {
+						weekStyle.setFont(weekFont);
+						cell.setCellStyle(weekStyle);
+					} else if (employees.contains(employee)) {
+						if (j == 7) {
+							cell.setCellValue(StringUtils.REPAET_CLOCK);
+						}
+						reCountStyle.setFont(reCountFont);
+						cell.setCellStyle(reCountStyle);
+					} else {
+						commonStyle.setFont(commonFont);
+						cell.setCellStyle(commonStyle);
+					}
+				}
+			}
+		}
+		return book;
+	}
+
+	/**
+	 * 创建表格字体
+	 * 
+	 * @param book
+	 *            当前的表
+	 * @param blod
+	 *            是否加粗
+	 * @param index
+	 *            颜色的索引值
+	 * @param fontSize
+	 *            字体大小
+	 * @return HSSFFont对象
+	 */
+	private HSSFFont createDifferentFont(HSSFWorkbook book, boolean blod, short index, short fontSize) {
+		HSSFFont font = book.createFont();
+		font.setBold(blod);
+		font.setColor(index);
+		font.setFontHeightInPoints(fontSize);
+		return font;
+	}
+
+	/**
+	 * 创建表格样式
+	 * 
+	 * @param book
+	 *            当前表
+	 * @param horizontalAlignment
+	 *            水平对齐样式
+	 * @param verticalAlignment
+	 *            垂直对齐样式
+	 * @return HSSFCellStyle实例
+	 */
+	private HSSFCellStyle createBookStyle(HSSFWorkbook book, HorizontalAlignment horizontalAlignment,
+			VerticalAlignment verticalAlignment) {
+		HSSFCellStyle cellStyle = book.createCellStyle();
+		cellStyle.setAlignment(horizontalAlignment);
+		cellStyle.setVerticalAlignment(verticalAlignment);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setWrapText(true);
+		return cellStyle;
+	}
+
+	/**
+	 * 创建批注内容
+	 * 
+	 * @param sheet
+	 *            当前的表格
+	 * @param mContent
+	 *            需要比对的姓名
+	 * @param mRow
+	 *            批注放置的初始行
+	 * @param mCol
+	 *            批注放置的初始列
+	 * @return Comment批注对象
+	 */
+	private Comment createLeaveComment(HSSFSheet sheet, String mContent, short mRow, short mCol) {
+		Drawing drawing = sheet.createDrawingPatriarch();
+		Comment comment = null;
+		if (comments != null) {
+			comment = drawing.createCellComment(
+					new HSSFClientAnchor(100, 100, 110, 110, mCol, mRow, (short) (mCol + 2), (short) (mRow + 2)));
+			for (String content : comments) {
+				if (content.contains(mContent)) {
+					comment.setString(new HSSFRichTextString(content));
+					break;
+				}
+			}
+		} else {
+			comment = drawing.createCellComment(new HSSFClientAnchor());
+			comment.setVisible(false);
+		}
+		return comment;
+	}
+
+	/**
+	 * 向磁盘写入表格文件
+	 * 
+	 * @param book
+	 *            要保存的book对象
+	 */
+	private void writeBook(HSSFWorkbook book) {
+		System.out.println("=====writeBook======");
+		System.out.println("path:" + savePath);
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(savePath);
+			if (book != null) {
+				book.write(fos);
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	/**
+	 * 查询重复打卡和漏打卡的问题。
+	 * 
+	 * @param employees
+	 * @return list集合
+	 */
+	private List<Employee> getReAttenceAndLackAttence(List<Employee> employees) {
+		List<Employee> employeeList = new ArrayList<Employee>();
+		boolean reDateflag = false;// 标记重复打开，true表示重复打卡，false表示不重复打卡
+		boolean flag = false;// 标记日期不同，只存在有给日期，如果为true，则日期不同，如果为false，日期相同
+		boolean nameFlag = false;
+		boolean sameNameFlag = false;
+		/**
+		 * 漏打卡： 日期相同，但是上下班状态缺失，要么只有下班，要么只有上班
+		 * 1、上班或者下班只打了一次，当前对象的日期只存在一次，与其他的比对是是不存在的；
+		 * 2、上班或者下班重复打了，当前对象的日期存在多次，但是上下班的状态只有一种，要么只有上班，要么只有下班。
+		 */
+		for (int i = 0; i < employees.size(); i++) {
+			Employee employee = employees.get(i);
+			for (int j = i + 1; j < employees.size(); j++) {
+				Employee compEmployee = employees.get(j);
+				// 如果两个对象的打卡日期不相同，则说明只存在一个打卡状态，如果相同，说明存在多次打卡
+				if (employee.getName().equals(compEmployee.getName())) {
+					sameNameFlag = true;
+					if (employee.getAttenceDate().equals(compEmployee.getAttenceDate())) {
+						reDateflag = true;
+						// 如果日期相同，上下班标识相同，则重复打卡，如果日期相同，但上下班标识不同，则正常打卡。
+						if (employee.getFlag().equals(compEmployee.getFlag())) {
+							employeeList.add(compEmployee);
+						}
+					} else {
+						// 上班或下班只打了一次，
+						flag = true;
+					}
+				} else {
+					nameFlag = true;
+				}
+			}
+			// 名字只出现一次
+			if (nameFlag && !sameNameFlag) {
+				employeeList.add(employee);
+			}
+			// 日期只出现一次，且没有重复
+			if (flag && !reDateflag) {
+				employeeList.add(employee);
+			}
+		}
+		System.out.println("打卡异常的次数：" + employeeList.size());
+		return employeeList;
+	}
+
+	/**
+	 * 查询一个字符串是否存在于数组中
+	 * 
+	 * @param sources
+	 *            原始数据
+	 * @param targetStr
+	 *            需要查询的字段
+	 * @return int类型，如果为1，表示存在，则不再循环；如果为0，则表示不存在。
+	 */
+	private int queryFromArray(List<Employee> sources, String targetStr) {
+		int flag = 0;
+		for (Employee employee : sources) {
+			if (targetStr.equals(employee.getName())) {
+				// 当前字符串等于employee的名称
+				flag = 1;
+				return flag;
+			} else if (targetStr.equals(employee.getDeptName())) {
+				// 当前字符串等于employee的部门名称
+				flag = 1;
+				return flag;
+			} else if (employee.getAttenceDate().contains(targetStr)) {
+				// employee包含当前的字符串
+				flag = 1;
+				return flag;
+			}
+		}
+		return flag;
+
+	}
+
+	/**
+	 * 获得已经排序好的list集合
+	 * 
+	 * @param datas
+	 *            原始数据
+	 * @return list集合，排序好的
+	 */
+	private List<Employee> sortList(List<Employee> datas) {
+		List<Employee> list = queryDateByName(datas);
+		System.out.println("sortList:" + list.size());
+		// 对datas进行排序
+		Collections.sort(list, new Comparator<Employee>() {
+			@Override
+			public int compare(Employee arr1, Employee arr2) {
+				int i = Integer.parseInt(arr1.getNo()) - Integer.parseInt(arr2.getNo());
+				return i;
+			}
+		});
+		return list;
+	}
+
+	/**
+	 * 获得员工未考勤的天数
+	 * 
+	 * @param list
+	 *            需要处理的数据
+	 * @return list集合
+	 */
+	private List<String> getWeekDay(List<Employee> list) {
+		System.out.println("==========getWeekDay==========");
+		boolean noFlag = false;
+		boolean empty = CommonUtils.isEmpty(date, StringUtils.DATE_FIELD);
+		System.out.println("empty:"+empty);
+		if (empty) {
+			System.out.println("empty");
+			return null;
+		}
+		
+		List<String> weekIndexs = CommonUtils.getResultsByMonth(date);
+		System.out.println("weekIndexs:" + weekIndexs.size());
+		// 取出重复的以及周六周日的工作天数
+		List<Employee> employees = EmployeeUtils.deleteRepeatData(list);
+		List<String> leaveDescs = new ArrayList<String>();
+		for (String name : names) {
+			String employeeName = "";
+			Set<String> nameDates = new HashSet<String>();
+			for (int j = 0; j < employees.size(); j++) {
+				Employee comp = employees.get(j);
+				if (name.contains(comp.getName())) {
+					employeeName = comp.getName();
+					nameDates.add(comp.getAttenceDate());
+				}
+			}
+			// System.out.println("employeeName:" + employeeName);
+			StringBuffer buffer = new StringBuffer();
+			for (String index : weekIndexs) {
+				if (nameDates.size() > 0) {
+					for (String string : nameDates) {
+						if (string.equals(index)) {
+							noFlag = false;
+							break;
+						} else {
+							noFlag = true;
+						}
+					}
+					if (noFlag) {
+						// System.out.println(employeeName + ":" + index);
+						buffer.append(index + "/");
+					}
+				}
+			}
+			if (employeeName != "" && (!buffer.toString().equals("") || buffer.toString() != null)) {
+				leaveDescs.add(employeeName + ":" + buffer.toString());
+			}
+		}
+		System.out.println(leaveDescs);
+		return leaveDescs;
+	}
+
+	/**
+	 * 获得工作的天数
+	 * 
+	 * @param list
+	 *            需要处理的集合
+	 * @param path
+	 *            保存的路径
+	 */
+	@SuppressWarnings("unused")
+	private void getWorkDay(List<Employee> list, String path) {
+		if (CommonUtils.isEmpty(date, StringUtils.DATE_FIELD)) {
+			return;
+		}
+		int count = CommonUtils.getResultByMonth(date);
+		// 去除重复的日期
+		list = EmployeeUtils.deleteRepeatData(list);
+
+		// 根据姓名，来计算工作天数
+		StringBuffer buffer = new StringBuffer();
+		for (String name : names) {
+			int targetCount = 0;
+			for (Employee employee : list) {
+				if (name.contains(employee.getName())) {
+					if (!(employee.getWeek().equals(StringUtils.SATURDAY)
+							|| employee.getWeek().equals(StringUtils.SUNDAY))) {
+						targetCount++;
+					}
+				}
+			}
+			System.out.println(name + "实际工作的天数：" + targetCount);
+			buffer.append(name + "实际工作的天数：" + targetCount + "\r\n");
+			if (targetCount < count) {
+				int day = count - targetCount;
+				System.out.println(name + "考勤不正常,缺失天数为：" + day);
+				buffer.append(name + "考勤不正常,缺失天数为：" + day + "\r\n");
+			} else if (targetCount == count) {
+				System.out.println(name + "考勤正常");
+				buffer.append(name + "考勤正常" + "\r\n");
+			}
+		}
+		// 保存数据
+		CommonUtils.writeTxt(buffer, path);
+	}
+}

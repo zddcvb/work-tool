@@ -1,0 +1,9 @@
+com.yanxi.animation.base
+com.yanxi.animation.domain
+com.yanxi.animation.main
+com.yanxi.animation.mapper
+com.yanxi.animation.service
+com.yanxi.animation.service.impl
+com.yanxi.animation.test
+com.yanxi.animation.ui
+com.yanxi.animation.util

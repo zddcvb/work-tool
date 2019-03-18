@@ -1,0 +1,26 @@
+package com.yanxi.animation.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yanxi.animation.base.BaseServiceImpl;
+import com.yanxi.animation.domain.Employee;
+import com.yanxi.animation.mapper.EmployeeMapper;
+import com.yanxi.animation.service.EmployeeService;
+
+@Service("employeeService")
+public class EmployeeServiceImpl extends BaseServiceImpl<Employee> implements EmployeeService {
+	@Autowired
+	private EmployeeMapper employeeMapper;
+
+	@Override
+	public Employee findByName(String nameInfo) {
+		return employeeMapper.findByName(nameInfo);
+	}
+
+	@Override
+	public void save(Employee t) {
+		employeeMapper.save(t);
+	}
+
+}

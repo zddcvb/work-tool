@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yanxi.animation.mapper.RoleMapper">
+	<select id="findById" parameterType="integer" resultType="com.yanxi.animation.domain.Role">
+		select
+		* from role where id=#{id}
+	</select>
+	<select id="findByDeptId" parameterType="integer" resultType="com.yanxi.animation.domain.Role">
+		select * from role where deptId=#{deptId}
+	</select>
+	<select id="findByName" parameterType="String" resultType="com.yanxi.animation.domain.Role">
+		select * from role where roleName=#{roleName}
+	</select>
+	<select id="findAllByName" parameterType="com.yanxi.animation.domain.Role" resultType="com.yanxi.animation.domain.Role">
+		select * from role where roleName=#{roleName}
+	</select>
+	<select id="findAll" resultType="com.yanxi.animation.domain.Role">
+		select * from role
+	</select>
+	<insert id="save" parameterType="com.yanxi.animation.domain.Role">
+		insert into role
+		values(#{id},#{roleName},#{deptId})
+	</insert>
+	<update id="update" parameterType="com.yanxi.animation.domain.Role">
+		update role set
+		roleName=#{roleName},deptId=#{deptId} where id=#{id}
+	</update>
+	<delete id="deleteById" parameterType="integer">
+		delete from role where
+		id=#{id}
+	</delete>
+	<delete id="deleteByDeptId" parameterType="integer">
+		delete from role
+		where roleName=#{roleName}
+	</delete>
+</mapper>

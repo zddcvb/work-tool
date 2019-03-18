@@ -1,0 +1,23 @@
+package com.yanxi.animation.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yanxi.animation.base.BaseServiceImpl;
+import com.yanxi.animation.domain.Department;
+import com.yanxi.animation.mapper.DepartmentMapper;
+import com.yanxi.animation.service.DepartmentService;
+
+@Service("departmentService")
+public class DepartmentServiceImpl extends BaseServiceImpl<Department> implements DepartmentService {
+	@Autowired
+	private DepartmentMapper departmentMapper;
+
+	@Override
+	public void save(Department t) {
+		System.out.println(" departmentService save");
+		System.out.println(departmentMapper);
+		departmentMapper.save(t);
+	}
+
+}

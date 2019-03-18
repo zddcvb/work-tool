@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yanxi.animation.mapper.EmployeeMapper">
+	<select id="findByName" parameterType="String"
+		resultType="com.yanxi.animation.domain.Employee">
+		select * from employee where name=#{name}
+	</select>
+	<select id="findByDeptId" parameterType="integer"
+		resultType="com.yanxi.animation.domain.Employee">
+		select * from employee where deptId=#{deptId}
+	</select>
+	<select id="findByIds" parameterType="integer"
+		resultType="com.yanxi.animation.domain.Employee">
+		select * from employee where id in (:ids)
+		<foreach collection="array" index="id" item="id" separator=","
+			open="(" close=")">
+			#{id}
+		</foreach>
+	</select>
+	<select id="findAll" resultType="com.yanxi.animation.domain.Employee">
+		select * from employee
+	</select>
+	<select id="findById" parameterType="integer"
+		resultType="com.yanxi.animation.domain.Employee">
+		select
+		* from employee where id=#{id}
+	</select>
+	<insert id="save" parameterType="com.yanxi.animation.domain.Employee">
+		insert into employee
+		values(#{id},#{name},#{gendar},#{age},#{roleId},
+		#{deptId},#{degree},#{profission},#{graduationSchool},#{workDate},
+		#{personId},#{familyAddress},#{nowAddress},#{telephone},#{isWork}
+		)
+	</insert>
+	<update id="update" parameterType="com.yanxi.animation.domain.Employee">
+		update employee set
+		name=#{name},gendar=#{gendar},age=#{age},roleId=#{roleId},
+		deptId=#{deptId},degree=#{degree},profission=#{profission},graduationSchool=#{graduationSchool},
+		workDatte=#{workDate},personId=#{personId},familyAddress=#{familyAddress},
+		nowAddress=#{nowAddress},telephone=#{telephone},isWork=#{isWork} where
+		id=#{id}
+	</update>
+	<delete id="delete" parameterType="integer">
+		delete from employee where
+		id=#{id}
+	</delete>
+</mapper>

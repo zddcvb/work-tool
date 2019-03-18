@@ -1,0 +1,15 @@
+package com.yanxi.animation.base;
+
+import java.util.List;
+
+public interface BaseService<T> {
+	T findByName(String nameInfo);
+
+	List<T> findAllByName(String nameInfo);
+
+	List<T> findAll();
+
+	void save(T t);
+	
+	
+}

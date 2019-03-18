@@ -1,0 +1,34 @@
+package com.yanxi.animation.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yanxi.animation.base.BaseServiceImpl;
+import com.yanxi.animation.domain.Project;
+import com.yanxi.animation.mapper.ProjectMapper;
+import com.yanxi.animation.service.ProjectService;
+
+@Service("projectService")
+public class ProjectServiceImpl extends BaseServiceImpl<Project> implements ProjectService {
+	@Autowired
+	private ProjectMapper projectMapper;
+
+	@Override
+	public List<Project> findAllByName(String nameInfo) {
+		List<Project> projects = projectMapper.findByEmployName(nameInfo);
+		return projects;
+	}
+
+	@Override
+	public List<Project> findAll() {
+		return projectMapper.findAll();
+	}
+
+	@Override
+	public void save(Project t) {
+		projectMapper.save(t);
+	}
+
+}

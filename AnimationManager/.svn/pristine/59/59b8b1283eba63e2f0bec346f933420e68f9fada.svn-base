@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yanxi.animation.mapper.DepartmentMapper">
+	<select id="findAll" resultType="com.yanxi.animation.domain.Department">
+		select * from department;
+	</select>
+	<select id="findById" parameterType="integer" resultType="com.yanxi.animation.domain.Department">
+		select
+		* from department where id=#{id}
+	</select>
+	<select id="findByName" parameterType="String" resultType="com.yanxi.animation.domain.Department">
+		select * from department where deptName=#{deptName}
+	</select>
+	<insert id="save" parameterType="com.yanxi.animation.domain.Department">
+		insert into department
+		values(#{id},#{deptName})
+	</insert>
+	<update id="update" parameterType="com.yanxi.animation.domain.Department">
+		update department set
+		deptName=#{deptName} where id=#{id}
+	</update>
+	<delete id="deleteById" parameterType="integer">
+		delete from department
+		where id=#{id}
+	</delete>
+	<delete id="deleteByName" parameterType="String">
+		delete from department
+		where deptName=#{deptName}
+	</delete>
+</mapper>

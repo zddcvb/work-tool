@@ -1,0 +1,307 @@
+package com.jollyclass.attence.ui;
+
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import com.jollyclass.attence.constant.StringUtils;
+import com.jollyclass.attence.utils.AttenceUtils;
+
+/**
+ * 考勤界面
+ * 
+ * @author 邹丹丹
+ *
+ */
+@SuppressWarnings("serial")
+public class JFrameUI extends JFrame implements FocusListener, ActionListener {
+	private JFrame jFrame;
+	private JTextField contentTx;
+	private JButton select_content;
+	private JButton select_name;
+	private JTextField nameTx;
+	private JTextField dateTx;
+	private JTextField fullNameTx;
+	private JButton submit_button;
+	private JLabel label;
+	private File selectedFile;
+	private String displayTx;
+	private String readPath;
+	private String namePath;
+	private JTextField deptTx;
+
+	/**
+	 * 初始化界面
+	 */
+	public void initUI() {
+		// jFrame = new JFrame("阳光视界考勤");
+		setTitle(StringUtils.SOFT_VERSION);
+		setSize(400, 500);
+		setLayout(new FlowLayout());
+		setFrame();
+		setResizable(false);
+		initButton();
+		setVisible(true);
+	}
+
+	/**
+	 * 窗口居中显示
+	 */
+	private void setFrame() {
+		int windowWidth = this.getWidth(); // 获得窗口宽
+		int windowHeight = this.getHeight(); // 获得窗口高
+		Toolkit kit = Toolkit.getDefaultToolkit(); // 定义工具包
+		Dimension screenSize = kit.getScreenSize(); // 获取屏幕的尺寸
+		int screenWidth = screenSize.width; // 获取屏幕的宽
+		int screenHeight = screenSize.height; // 获取屏幕的高
+		this.setLocation(screenWidth / 2 - windowWidth / 2, screenHeight / 2 - windowHeight / 2);// 设置窗口居中显示
+	}
+
+	/**
+	 * 初始化按钮
+	 * 
+	 */
+	private void initButton() {
+		JPanel button_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		// =============内容选择框================
+		GridLayout gridLayout = new GridLayout(5, 5, 20, 20);
+		JPanel content_panel = new JPanel(gridLayout);
+		content_panel.setAlignmentY(CENTER_ALIGNMENT);
+		Font font = new Font("微软雅黑", 0, 16);
+		contentTx = new JTextField("请输入考勤路径", 15);
+		contentTx.setFont(font);
+		select_content = new JButton("选择考勤数据");
+		select_content.setFont(font);
+		content_panel.add(contentTx);
+		content_panel.add(select_content);
+		nameTx = new JTextField("请输入姓名路径");
+		select_name = new JButton("选择姓名列表");
+		nameTx.setFont(font);
+		select_name.setFont(font);
+		content_panel.add(nameTx);
+		content_panel.add(select_name);
+		dateTx = new JTextField("请输入具体日期");
+		fullNameTx = new JTextField("请输入具体姓名");
+		dateTx.setFont(font);
+		fullNameTx.setFont(font);
+		content_panel.add(dateTx);
+		content_panel.add(fullNameTx);
+		submit_button = new JButton("提交");
+		deptTx = new JTextField("请输入部门");
+		deptTx.setFont(font);
+		label = new JLabel("用时：0s");
+		label.setFont(font);
+		submit_button.setFont(font);
+		content_panel.add(deptTx);
+		content_panel.add(submit_button);
+		content_panel.add(label);
+		button_panel.add(content_panel);
+		add(button_panel);
+		pack();
+		initEvent();
+	}
+
+	/**
+	 * 初始化文本事件 初始化按钮事件 初始化窗口关闭打开事件
+	 */
+	private void initEvent() {
+		dateTx.addFocusListener(this);
+		fullNameTx.addFocusListener(this);
+		deptTx.addFocusListener(this);
+		select_content.addActionListener(this);
+		select_name.addActionListener(this);
+		submit_button.addActionListener(this);
+		this.addWindowListener(new WindowAdapter() {
+
+			public void windowClosing(WindowEvent e) {
+				System.exit(0);
+			}
+
+			@Override
+			public void windowClosed(WindowEvent e) {
+				System.out.println("closed");
+				super.windowClosed(e);
+			}
+
+		});
+	}
+
+	/**
+	 * 获得字体
+	 */
+	public void getSysFont() {
+		// 获得系统字体
+		String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+		for (String string : fonts) {
+			System.out.println("string:" + string);
+		}
+		// 获得屏幕设备
+		GraphicsDevice[] screenDevices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+		for (GraphicsDevice graphicsDevice : screenDevices) {
+			System.out.println(graphicsDevice.getDisplayMode().getHeight());
+		}
+	}
+
+	/**
+	 * textField获得焦点
+	 * 
+	 */
+	@Override
+	public void focusGained(FocusEvent e) {
+		JTextField textField = (JTextField) e.getSource();
+		System.out.println(textField.getText().trim());
+		textField.setText("");
+	}
+
+	/**
+	 * textField失去焦点
+	 */
+	@Override
+	public void focusLost(FocusEvent e) {
+
+	}
+
+	/**
+	 * 按钮选择事件
+	 */
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		String actionCommand = e.getActionCommand();
+		switch (actionCommand) {
+		case "选择考勤数据":
+			openWindowsFileDialog(contentTx, 0);
+			break;
+		case "选择姓名列表":
+			openWindowsFileDialog(nameTx, 1);
+			break;
+		case "提交":
+			submitData();
+			pack();
+			break;
+		}
+	}
+
+	/**
+	 * 打开选择文件对话框
+	 * 
+	 * @param targetTextfield
+	 */
+	private void openWindowsFileDialog(JTextField targetTextfield, int flag) {
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		chooser.setCurrentDirectory(selectedFile);
+		chooser.showOpenDialog(jFrame);
+		selectedFile = chooser.getSelectedFile();
+		if (selectedFile != null) {
+			String filePath = selectedFile.getAbsolutePath();
+			if (flag == 0) {
+				readPath = filePath;
+			} else if (flag == 1) {
+				namePath = filePath;
+			}
+			displayTx = filePath.substring(filePath.lastIndexOf("\\") + 1, filePath.length());
+			targetTextfield.setText(displayTx);
+			System.out.println("field:" + targetTextfield.getText().trim());
+		}
+	}
+
+	/**
+	 * 提交数据，开始生成表格
+	 */
+	private void submitData() {
+		if (readPath == null) {
+			openErrorDiaglog("考勤数据不存在");
+			return;
+		}
+		if (namePath == null) {
+			openErrorDiaglog("姓名列表不存在");
+			return;
+		}
+		long currentTimeMillis = System.currentTimeMillis();
+		System.out.println("readpath:" + readPath);
+		String date = dateTx.getText().trim();
+		String savePath = readPath.substring(0, readPath.lastIndexOf("\\") + 1) + "阳光视界考勤表";
+		String nameStr = fullNameTx.getText().trim();
+		System.out.println("nameString:" + nameStr);
+		String deptStr = deptTx.getText().trim();
+		// 匹配name
+		if ("请输入具体姓名".equals(nameStr) || "".equals(nameStr)) {
+			System.out.println("savePath:" + savePath);
+		} else {
+			savePath += "-" + nameStr;
+		}
+		if ("请输入部门".equals(deptStr) || "".equals(deptStr)) {
+			System.out.println("savePath:" + savePath);
+		} else {
+			savePath += deptStr;
+		}
+		// 匹配date
+		String regex = "[0-9]{4}-[0-9]{2}";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(date);
+		boolean result = matcher.find();
+		if ("请输入具体日期".equals(date) || "".equals(date)) {
+			savePath += ".xls";
+		} else if (!result) {
+			System.out.println("匹配失败");
+			savePath += ".xls";
+			openErrorDiaglog("日期格式不匹配");
+			return;
+		} else {
+			savePath += date + ".xls";
+		}
+		System.out.println("savePath:" + savePath);
+		System.out.println(date);
+		AttenceUtils utils = new AttenceUtils(readPath, savePath, namePath, date, nameStr, deptStr);
+		int index = utils.createAttenceExcel();
+		checkErrorIndex(index);
+		long newTime = System.currentTimeMillis();
+		label.setText(
+				("time：" + (newTime - currentTimeMillis) / 1000 + "." + (newTime - currentTimeMillis) % 1000 + "S"));
+	}
+
+	/**
+	 * 根据index传递不同的消息对话框
+	 * 
+	 * @param index
+	 */
+	private void checkErrorIndex(int index) {
+		System.out.println("index:" + index);
+		if (index == 1) {
+			openErrorDiaglog("人在太空中");
+		} else if (index == 2) {
+			openErrorDiaglog("未来存在这个部门");
+		} else if (index == 3) {
+			openErrorDiaglog("日期不存在");
+		}
+	}
+
+	/**
+	 * 打开消息对话框，自定义消息
+	 * 
+	 * @param message
+	 */
+	private void openErrorDiaglog(String message) {
+		System.out.println("对话框");
+		JOptionPane.showMessageDialog(this, message);
+	}
+}
